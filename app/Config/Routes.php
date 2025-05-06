@@ -11,4 +11,5 @@ $routes->get('/register', 'AuthController::registerView');
 $routes->post('auth/login', 'AuthController::login');
 $routes->post('form/register', 'AuthController::register');
 $routes->get('home', 'AuthController::homeView');
+$routes->get('task/index', 'Task::index');
 
