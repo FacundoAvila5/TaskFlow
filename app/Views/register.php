@@ -45,7 +45,7 @@
                         <h1 class="text-center brand-title mb-2">TaskFlow</h1>
                         <h4 class="text-center mb-3">Crear una cuenta</h4>
                         
-                        <p class="text-center mb-4">¿Ya tienes una cuenta? <a href="<?= base_url('login') ?>">Inicia sesión aquí</a></p>
+                        <p class="text-center mb-4">¿Ya tienes una cuenta? <a class="text-decoration-none fw-medium" href="<?= base_url('login') ?>">Inicia sesión aquí</a></p>
 
                         <?php if (session('success')): ?>
                             <div class="alert alert-success"><?= session('success') ?></div>
@@ -55,7 +55,7 @@
                             <div class="row">
                                 <!-- Nombre -->
                                 <div class="col-md-12 mb-3">
-                                    <?= form_label('Nombre', 'nombre', ['class' => 'form-label']) ?>
+                                    <?= form_label('Nombre de usuario', 'nombre', ['class' => 'form-label']) ?>
                                     <?= form_input([
                                         'name' => 'nombre',
                                         'id' => 'nombre',

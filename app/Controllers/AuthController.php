@@ -119,7 +119,7 @@ class AuthController extends BaseController {
         ];
         session()->set($sessionData);
     
-        return redirect()->to('home');
+        return redirect()->to('index');
     }
 
     public function logout() {

@@ -41,7 +41,7 @@
                 <div class="card login-card">
                     <div class="card-body p-4">
                         <h1 class="text-center brand-title mb-2">TaskFlow</h1>
-                        <h3 class="text-center text-muted mb-3">Bienvenido de nuevo</h3>
+                        <h3 class="text-center mb-3">Bienvenido de nuevo</h3>
                         
                         <?php if (session('error')): ?>
                             <div class="alert alert-danger alert-dismissible fade show mb-3">
