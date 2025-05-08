@@ -62,15 +62,11 @@ class AuthController extends BaseController {
 
         try {
             $model->insert($datos);
-            
-            // Opcional: Puedes agregar un mensaje de éxito
             session()->setFlashdata('success', 'Registro exitoso. Por favor inicie sesión.');
-            
-            // Redirigir al login después del registro exitoso
+        
             return redirect()->to('login');
             
         } catch (\Exception $e) {
-            // Manejar errores de base de datos
             log_message('error', 'Error al registrar usuario: ' . $e->getMessage());
             return redirect()->back()->withInput()->with('error', 'Ocurrió un error al registrar. Por favor intente nuevamente.');
         }
@@ -100,17 +96,14 @@ class AuthController extends BaseController {
         $email = $this->request->getPost('user');
         $password = $this->request->getPost('pass');
     
-        // Buscar usuario por email
         $user = $userModel->where('email', $email)->first();
     
-        // Validación unificada de credenciales
         if (!$user || !password_verify($password, $user['password'])) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Credenciales incorrectas. Verifique su email y contraseña');
         }
     
-        // Autenticación exitosa
         $sessionData = [
             'user_id' => $user['id'],
             'nombre' => $user['nombreUsuario'],
