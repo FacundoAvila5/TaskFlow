@@ -6,33 +6,7 @@
     <title>TakFlow - Iniciar sesión</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            display: flex;
-            min-height: 100vh;
-            align-items: center;
-        }
-        .login-card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        .form-control {
-            height: 45px;
-            border-radius: 8px;
-        }
-        .btn-login {
-            height: 45px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-        .brand-title {
-            font-family: 'Pacifico', cursive;
-            font-size: 2.5rem;
-            color: #0d6efd;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -84,22 +58,5 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    // Validación del lado del cliente
-    (function() {
-        'use strict';
-        const forms = document.querySelectorAll('.needs-validation');
-        
-        Array.from(forms).forEach(form => {
-            form.addEventListener('submit', event => {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
-    })();
-    </script>
 </body>
 </html>
