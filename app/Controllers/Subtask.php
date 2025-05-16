@@ -3,63 +3,57 @@
 namespace App\Controllers;
 use App\Models\TaskModel;
 use App\Models\SubtaskModel;
-use App\Models\UserAuthModel;
 
-class Task extends BaseController
+class Subtask extends BaseController
 {
     public function __construct() {
         helper(['form']);
     }
     
     public function index()
-{
-    if (!session()->has('user_id')) {
-        return redirect()->to('login')->with('error', 'Debes iniciar sesión');
-    }
+    {
+        if (!session()->has('user_id')) {
+            return redirect()->to('login')->with('error', 'Debes iniciar sesión');
+        }
 
-    $userId = session()->get('user_id');
-    
-    $taskModel = new TaskModel();
-    $subtaskModel = new SubtaskModel(); // Asegúrate de que el namespace sea correcto
-    $userAuthModel = new UserAuthModel();
-    
-    // Obtener todas las tareas del usuario
-    $tasks = $taskModel->where('userId', $userId)
-                    ->orderBy('prioridad', 'DESC')
-                    ->orderBy('fechaVencimiento', 'ASC')
-                    ->findAll();
-
-    // Para cada tarea, obtener sus subtareas relacionadas
-    foreach ($tasks as &$task) {
-        $subtasks = $subtaskModel->where('tareaId', $task['id'])
-                                ->orderBy('prioridad', 'DESC')
-                                ->orderBy('fechaVencimiento', 'ASC')
-                                ->findAll();
+        $userId = session()->get('user_id');
         
-        // Mapear los campos para que coincidan con lo que espera la vista
-        $task['subtasks'] = array_map(function($subtask) {
-            return [
-                'id' => $subtask['id'],
-                'title' => $subtask['asunto'],
-                'description' => $subtask['descripcion'],
-                'completed' => ($subtask['estatus'] == 1), // Asumiendo que estatus 1 es completado
-                'prioridad' => $subtask['prioridad'],
-                'fechaVencimiento' => $subtask['fechaVencimiento'],
-                'responsableId' => $subtask['responsableId'],
-            ];
-        }, $subtasks);
+        $taskModel = new TaskModel();
+        $subtaskModel = new SubtaskModel(); // Asegúrate de que el namespace sea correcto
+        
+        // Obtener todas las tareas del usuario
+        $tasks = $taskModel->where('userId', $userId)
+                        ->orderBy('prioridad', 'DESC')
+                        ->orderBy('fechaVencimiento', 'ASC')
+                        ->findAll();
+
+        // Para cada tarea, obtener sus subtareas relacionadas
+        foreach ($tasks as &$task) {
+            $subtasks = $subtaskModel->where('tareaId', $task['id'])
+                                    ->orderBy('prioridad', 'DESC')
+                                    ->orderBy('fechaVencimiento', 'ASC')
+                                    ->findAll();
+            
+            // Mapear los campos para que coincidan con lo que espera la vista
+            $task['subtasks'] = array_map(function($subtask) {
+                return [
+                    'id' => $subtask['id'],
+                    'title' => $subtask['asunto'],
+                    'description' => $subtask['descripcion'],
+                    'completed' => ($subtask['estatus'] == 1), // Asumiendo que estatus 1 es completado
+                    'prioridad' => $subtask['prioridad'],
+                    'fechaVencimiento' => $subtask['fechaVencimiento']
+                ];
+            }, $subtasks);
+        }
+
+        $data = [
+            'title' => 'Mis Tareas',
+            'tasks' => $tasks 
+        ];
+        
+        return view('index', $data);
     }
-
-    $users = $userAuthModel->findAll();
-
-    $data = [
-        'title' => 'Mis Tareas',
-        'tasks' => $tasks ,
-        'users' => $users
-    ];
-    
-    return view('index', $data);
-}
 
     public function create()
     {
@@ -70,7 +64,6 @@ class Task extends BaseController
                 'descripcion' => 'required|max_length[255]',
                 'prioridad' => 'required',
                 'vencimiento' => 'required|valid_date',
-                'color' => 'required'
             ],
             [
                 'asunto' => [
@@ -88,9 +81,6 @@ class Task extends BaseController
                 'vencimiento' => [
                     'required' => 'La fecha de vencimiento es requerida',
                     'valid_date' => 'La fecha de vencimiento no es válida'
-                ],
-                'color' => [
-                    'required' => 'El color es requerido'
                 ]
             ]
         );
@@ -103,23 +93,25 @@ class Task extends BaseController
 
         $userId = session()->get('user_id');
 
-        $taskModel = new TaskModel();
+        $taskModel = new SubtaskModel();
         $taskModel->save([
-            'userId' => $userId,
+            'tareaId' => $this->request->getPost('task_id'),
             'asunto' => $this->request->getPost('asunto'),
             'descripcion' => $this->request->getPost('descripcion'),
             'prioridad' => $this->request->getPost('prioridad'),
             'fechaVencimiento' => $this->request->getPost('vencimiento'),
             'fechaRecordatorio' => $this->request->getPost('vencimiento'),
-            'color' => $this->request->getPost('color'),
-            'estatus' => 0,
-            'archivada' => false
+            'estatus' => 2,
+            'responsableId' => $this->request->getPost('responsable')
         ]);
 
-        return redirect()->back()->with('success', 'Tarea creada exitosamente!');
+        return redirect()->back()->with('success', 'Subtarea creada exitosamente!');
     }
 
     public function update($id = null){
+        //   var_dump($this->request->getPost()); 
+
+
         $validacion = service('validation');
         $validacion->setRules(
             [
@@ -127,7 +119,6 @@ class Task extends BaseController
                 'descripcion' => 'required|max_length[255]',
                 'prioridad' => 'required',
                 'vencimiento' => 'required|valid_date',
-                'color' => 'required'
             ],
             [
                 'asunto' => [
@@ -145,9 +136,6 @@ class Task extends BaseController
                 'vencimiento' => [
                     'required' => 'La fecha de vencimiento es requerida',
                     'valid_date' => 'La fecha de vencimiento no es válida'
-                ],
-                'color' => [
-                    'required' => 'El color es requerido'
                 ]
             ]
         );
@@ -160,26 +148,25 @@ class Task extends BaseController
 
         $userId = session()->get('user_id');
 
-        $taskModel = new TaskModel();
+        $taskModel = new SubtaskModel();
         $taskModel->update($id, [
-            'userId' => $userId,
+            'tareaId' => $this->request->getPost('task_id'),
             'asunto' => $this->request->getPost('asunto'),
             'descripcion' => $this->request->getPost('descripcion'),
             'prioridad' => $this->request->getPost('prioridad'),
             'fechaVencimiento' => $this->request->getPost('vencimiento'),
             'fechaRecordatorio' => $this->request->getPost('vencimiento'),
-            'color' => $this->request->getPost('color'),
-            'estatus' => 0,
-            'archivada' => false
+            'estatus' => 2,
+            'responsableId' => $this->request->getPost('responsable')
         ]);
 
-        return redirect()->back()->with('success', 'Tarea creada exitosamente!');
+        return redirect()->back()->with('success', 'Subtarea actualizada exitosamente!');
     }
 
     public function delete($id = null){
-        $taskModel = new TaskModel();
+        $taskModel = new SubtaskModel();
         $taskModel->delete($id);
 
-        return redirect()->back()->with('success', 'Tarea creada exitosamente!');
+        return redirect()->back()->with('success', 'Subarea eliminada exitosamente!');
     }
 }
