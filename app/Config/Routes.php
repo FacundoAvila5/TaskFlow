@@ -15,5 +15,8 @@ $routes->get('index', 'Task::index');
 $routes->post('task/create', 'Task::Create');
 $routes->post('task/update/(:segment)', 'Task::update/$1');
 $routes->post('task/delete/(:segment)', 'Task::delete/$1');
+$routes->post('subtask/create', 'Subtask::create');
+$routes->post('subtask/update/(:segment)', 'Subtask::update/$1');
+$routes->post('subtask/delete/(:segment)', 'Subtask::delete/$1');
 
 

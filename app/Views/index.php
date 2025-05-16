@@ -28,8 +28,12 @@
             <div class="alert alert-info">No tienes tareas registradas aún.</div>
         <?php else: ?>
             <?php foreach ($tasks as $task): ?>
-
                 <?php
+                 $modalsData = [
+            'task' => $task,
+            'subtasks' => $task['subtasks'],
+            'users' => $users // Si necesitas los usuarios para selects
+        ];
                 $priorityClass = '';
                 $priorityBadge = '';
                 $statusBadge = '';
@@ -112,14 +116,126 @@
                                 </span>
                             <?php endif; ?>
                             
-                            <!-- <span class="text-muted"><i class="bi bi-list-check me-1"></i> 3 subtareas</span> -->
+                            <a href="#subtasks-<?= $task['id'] ?>" class="text-muted text-decoration-none" 
+                               data-bs-toggle="collapse" aria-expanded="false" 
+                               aria-controls="subtasks-<?= $task['id'] ?>">
+                                <i class="bi bi-list-check me-1"></i> 
+                                <?= count($task['subtasks'] ?? []) ?> subtareas
+                            </a>
+                        </div>
+                        
+                        <!-- Subtareas (colapsable) -->
+                        <div class="collapse mt-3" id="subtasks-<?= $task['id'] ?>">
+                            <div class="card card-body bg-light p-0">
+                                <?php if (!empty($task['subtasks'])): ?>
+                                    <?php foreach ($task['subtasks'] as $subtask): ?>
+                                        <?php
+                                            $subtaskBadge = '';
+                                            switch ($subtask['prioridad']) {
+                                                case 0:
+                                                    $subtaskBadge = 'bg-danger';
+                                                    break;
+                                                case 1:
+                                                    $subtaskBadge = 'bg-warning text-dark';
+                                                    break;
+                                                case 2:
+                                                    $subtaskBadge = 'bg-success';
+                                                    break;
+                                            }
+                                        ?>
+                                        <div class="card m-2">
+                                            <div class="card-body d-flex">
+                                                <!-- Checkbox a la izquierda -->
+                                                <div class="d-flex align-items-center justify-content-center pe-2 border-end" style="min-width: 50px;">
+                                                    <div class="form-check m-0">
+                                                        <input class="form-check-input" type="checkbox" id="subtask-<?= $subtask['id'] ?>" <?= $subtask['completed'] ? 'checked' : '' ?>>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Contenido de la subtarea a la derecha -->
+                                                <div class="flex-grow-1 ps-3">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <span class="badge <?= $subtaskBadge ?> me-2">
+                                                                <?= $subtask['prioridad'] == 0 ? 'Alta' : ($subtask['prioridad'] == 1 ? 'Normal' : 'Baja') ?>
+                                                            </span>
+                                                        </div>
+                                                        <div class="btn-group">
+                                                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" 
+                                                                    data-bs-target="#editSubtask-<?= $task['id'] ?>-<?= $subtask['id'] ?>">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" 
+                                                                    data-bs-target="#deleteSubtask-<?= $subtask['id'] ?>">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Asunto -->
+                                                    <h6 class="mt-2 <?= $subtask['completed'] ? 'text-decoration-line-through text-muted' : '' ?>">
+                                                        <?= $subtask['completed'] ? '<s>' . esc($subtask['title']) . '</s>' : esc($subtask['title']) ?>
+                                                    </h6>
+
+                                                    <!-- Descripción -->
+                                                    <?php if (!empty($subtask['description'])): ?>
+                                                        <p class="mb-0 <?= $subtask['completed'] ? 'text-decoration-line-through text-muted' : '' ?>">
+                                                            <?= esc($subtask['description']) ?>
+                                                        </p>
+                                                    <?php endif; ?>
+
+                                                    <!-- Fecha de vencimiento -->
+                                                    <?php if (!empty($subtask['fechaVencimiento'])): ?>
+                                                        <div class="d-flex align-items-center mt-2">
+                                                            <span class="text-muted me-3">
+                                                                <i class="bi bi-calendar me-1"></i> 
+                                                                Vence: <?= date('d M, Y', strtotime($subtask['fechaVencimiento'])) ?>
+                                                            </span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php
+                                endforeach; ?>
+                                <?php else: ?>
+                                    <div class="p-3 text-center text-muted">
+                                        No hay subtareas para esta tarea.
+                                    </div>
+                                <?php endif; ?>
+                                <!-- Botón para agregar nueva subtarea -->
+                                <div class="p-3 border-top">
+                                    <button class="btn btn-primary w-100" type="button" data-bs-toggle="modal" data-bs-target="#createSubtask">
+                                        <i class="bi bi-plus-circle"></i> Agregar Subtarea
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <?= view('subtasks/createSubtask', ['task' => $task]) ?>
                 <?= view('tasks/editTask', ['task' => $task]) ?>
                 <?= view('tasks/deleteTask', ['task' => $task]) ?>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('modals') ?>
+    <?php foreach ($tasks as $task): ?>
+        <?php if (!empty($task['subtasks'])): ?>
+            <?php foreach ($task['subtasks'] as $subtask): ?>
+                <?= view('subtasks/editSubtask', [
+                    'task' => $task,
+                    'subtask' => $subtask,
+                    'modalId' => "editSubtask-{$task['id']}-{$subtask['id']}"
+                ]) ?>
+                <?= view('subtasks/deleteSubtask', [
+                    'subtask' => $subtask,
+                    'modalId' => "deleteSubtask-{$task['id']}-{$subtask['id']}"
+                ]) ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    <?php endforeach; ?>
 <?= $this->endSection() ?>
