@@ -16,7 +16,6 @@
 
         <?= form_open('subtask/delete/' . $subtask['id']) ?>
           <script>
-        console.log('ID de la subtarea eliminada:', <?= $subtask['id'] ?>);
     </script>
           <button type="submit" class="btn btn-danger">Eliminar</button>
         <?= form_close() ?>

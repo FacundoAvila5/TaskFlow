@@ -70,6 +70,7 @@ class Task extends BaseController
                 'descripcion' => 'required|max_length[255]',
                 'prioridad' => 'required',
                 'vencimiento' => 'required|valid_date',
+                'recordatorio' => 'permit_empty|valid_date',
                 'color' => 'required'
             ],
             [
@@ -95,9 +96,35 @@ class Task extends BaseController
             ]
         );
 
+        $target = 'createTask';
+
+         if ($this->request->getPost('recordatorio')) {
+            $recordatorio = $this->request->getPost('recordatorio');
+            $vencimiento = $this->request->getPost('vencimiento');
+            $hoy = date('Y-m-d'); 
+
+           $errores = [];
+
+            if ($recordatorio < $hoy) {
+                $errores['recordatorio'] = 'La fecha de recordatorio no puede ser anterior a hoy';
+            }
+
+            if ($recordatorio > $vencimiento) {
+                $errores['recordatorio'] = 'La fecha de recordatorio no puede ser posterior a la fecha de vencimiento';
+            }
+
+            if (!empty($errores)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('modalTarget', $target)
+                    ->with('errors', $errores);
+            }
+        }
+
         if (!$validacion->withRequest($this->request)->run()) {
             return redirect()->back()
                 ->withInput()
+                ->with('modalTarget', $target)
                 ->with('errors', $validacion->getErrors());
         }
 
@@ -110,7 +137,7 @@ class Task extends BaseController
             'descripcion' => $this->request->getPost('descripcion'),
             'prioridad' => $this->request->getPost('prioridad'),
             'fechaVencimiento' => $this->request->getPost('vencimiento'),
-            'fechaRecordatorio' => $this->request->getPost('vencimiento'),
+            'fechaRecordatorio' => $this->request->getPost('recordatorio') ?: null,
             'color' => $this->request->getPost('color'),
             'estatus' => 0,
             'archivada' => false
@@ -127,6 +154,7 @@ class Task extends BaseController
                 'descripcion' => 'required|max_length[255]',
                 'prioridad' => 'required',
                 'vencimiento' => 'required|valid_date',
+                'recordatorio' => 'permit_empty|valid_date',
                 'color' => 'required'
             ],
             [
@@ -152,9 +180,35 @@ class Task extends BaseController
             ]
         );
 
+        $target = 'editTask-'. $id;
+
+         if ($this->request->getPost('recordatorio')) {
+            $recordatorio = $this->request->getPost('recordatorio');
+            $vencimiento = $this->request->getPost('vencimiento');
+            $hoy = date('Y-m-d'); 
+
+           $errores = [];
+
+            if ($recordatorio < $hoy) {
+                $errores['recordatorio'] = 'La fecha de recordatorio no puede ser anterior a hoy';
+            }
+
+            if ($recordatorio > $vencimiento) {
+                $errores['recordatorio'] = 'La fecha de recordatorio no puede ser posterior a la fecha de vencimiento';
+            }
+
+            if (!empty($errores)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('modalTarget', $target)
+                    ->with('errors', $errores);
+            }
+        }
+
         if (!$validacion->withRequest($this->request)->run()) {
             return redirect()->back()
                 ->withInput()
+                ->with('modalTarget', $target)
                 ->with('errors', $validacion->getErrors());
         }
 
@@ -167,7 +221,7 @@ class Task extends BaseController
             'descripcion' => $this->request->getPost('descripcion'),
             'prioridad' => $this->request->getPost('prioridad'),
             'fechaVencimiento' => $this->request->getPost('vencimiento'),
-            'fechaRecordatorio' => $this->request->getPost('vencimiento'),
+            'fechaRecordatorio' => $this->request->getPost('recordatorio') ?: null,
             'color' => $this->request->getPost('color'),
             'estatus' => 0,
             'archivada' => false
