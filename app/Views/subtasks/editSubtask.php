@@ -1,5 +1,4 @@
-<!-- Modal para Nueva Tarea -->
-<div class="modal fade" id="editSubtask-<?= $task['id'] ?>-<?= $subtask['id'] ?>" tabindex="-1" aria-labelledby="editarSubtareaModalLabel" aria-hidden="true">
+<div class="modal fade" id="editSubtask-<?= $subtask['id'] ?>" tabindex="-1" aria-labelledby="editarSubtareaModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -111,12 +110,17 @@
     </div>
 </div>
 
+<?php if (session()->has('errors')) : ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    <?php if (session('errors.descripcion') || session('errors.asunto')) { ?>
-        var modal = new bootstrap.Modal(document.getElementById('editSubtask-<?= $task['id'] ?>-<?= $subtask['id'] ?>'));
-        modal.show();
-    <?php } ?>
-});
-
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalId = '<?= session('modalTarget') ?>';
+        var modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            console.error('No se encontró el modal con ID:', modalId);
+        }
+    });
 </script>
+<?php endif; ?>

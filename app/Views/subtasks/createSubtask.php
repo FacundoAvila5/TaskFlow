@@ -87,13 +87,18 @@
     </div>
 </div>
 
+<?php if (session()->has('errors')) : ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    <?php 
-    if (session('errors.descripcion')||session('errors.asunto')) { ?>
-        var modal = new bootstrap.Modal(document.getElementById('createTask'));
-        modal.show();
-    <?php } ?>
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalId = '<?= session('modalTarget') ?>';
+        var modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            console.error('No se encontró el modal con ID:', modalId);
+        }
+    });
 </script>
+<?php endif; ?>
 

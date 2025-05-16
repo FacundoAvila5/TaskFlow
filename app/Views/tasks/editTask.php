@@ -1,4 +1,3 @@
-<!-- Modal para Nueva Tarea -->
 <div class="modal fade" id="editTask-<?= $task['id'] ?>" tabindex="-1" aria-labelledby="editarTareaModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -78,6 +77,20 @@
                             <div class="invalid-feedback"><?= session('errors.vencimiento') ?></div>
                         <?php endif; ?>
                     </div>
+
+                    <div class="mb-3">
+                        <?= form_label('Fecha de recordatorio', 'recordatorio', ['class' => 'form-label']) ?>
+                        <?= form_input([
+                            'type' => 'date',
+                            'name' => 'recordatorio',
+                            'id' => 'recordatorio',
+                            'class' => 'form-control ' . (session('errors.recordatorio') ? 'is-invalid' : ''),
+                            'value' => old('recordatorio', $task['fechaRecordatorio'])
+                        ]) ?>
+                        <?php if (session('errors.recordatorio')): ?>
+                            <div class="invalid-feedback"><?= session('errors.recordatorio') ?></div>
+                        <?php endif; ?>
+                    </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Color <span class="text-danger">*</span></label>
@@ -118,12 +131,17 @@
     </div>
 </div>
 
+<?php if (session()->has('errors')) : ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    <?php 
-    if (session('errors.descripcion')||session('errors.asunto')) { ?>
-        var modal = new bootstrap.Modal(document.getElementById('createTask'));
-        modal.show();
-    <?php } ?>
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalId = '<?= session('modalTarget') ?>';
+        var modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            console.error('No se encontró el modal con ID:', modalId);
+        }
+    });
 </script>
+<?php endif; ?>

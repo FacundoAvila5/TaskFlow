@@ -18,5 +18,6 @@ $routes->post('task/delete/(:segment)', 'Task::delete/$1');
 $routes->post('subtask/create', 'Subtask::create');
 $routes->post('subtask/update/(:segment)', 'Subtask::update/$1');
 $routes->post('subtask/delete/(:segment)', 'Subtask::delete/$1');
+$routes->post('subtask/updateEstado', 'Subtask::updateEstado');
 
 

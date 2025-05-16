@@ -19,28 +19,25 @@ class Subtask extends BaseController
         $userId = session()->get('user_id');
         
         $taskModel = new TaskModel();
-        $subtaskModel = new SubtaskModel(); // Asegúrate de que el namespace sea correcto
+        $subtaskModel = new SubtaskModel(); 
         
-        // Obtener todas las tareas del usuario
         $tasks = $taskModel->where('userId', $userId)
                         ->orderBy('prioridad', 'DESC')
                         ->orderBy('fechaVencimiento', 'ASC')
                         ->findAll();
 
-        // Para cada tarea, obtener sus subtareas relacionadas
         foreach ($tasks as &$task) {
             $subtasks = $subtaskModel->where('tareaId', $task['id'])
                                     ->orderBy('prioridad', 'DESC')
                                     ->orderBy('fechaVencimiento', 'ASC')
                                     ->findAll();
             
-            // Mapear los campos para que coincidan con lo que espera la vista
             $task['subtasks'] = array_map(function($subtask) {
                 return [
                     'id' => $subtask['id'],
                     'title' => $subtask['asunto'],
                     'description' => $subtask['descripcion'],
-                    'completed' => ($subtask['estatus'] == 1), // Asumiendo que estatus 1 es completado
+                    'completed' => ($subtask['estatus'] == 1), 
                     'prioridad' => $subtask['prioridad'],
                     'fechaVencimiento' => $subtask['fechaVencimiento']
                 ];
@@ -85,9 +82,12 @@ class Subtask extends BaseController
             ]
         );
 
+        $target = 'createSubtask';
+
         if (!$validacion->withRequest($this->request)->run()) {
             return redirect()->back()
                 ->withInput()
+                ->with('modalTarget', $target)
                 ->with('errors', $validacion->getErrors());
         }
 
@@ -110,7 +110,6 @@ class Subtask extends BaseController
 
     public function update($id = null){
         //   var_dump($this->request->getPost()); 
-
 
         $validacion = service('validation');
         $validacion->setRules(
@@ -140,9 +139,12 @@ class Subtask extends BaseController
             ]
         );
 
+        $target = 'editSubtask-'. $id;
+
         if (!$validacion->withRequest($this->request)->run()) {
             return redirect()->back()
                 ->withInput()
+                ->with('modalTarget', $target)
                 ->with('errors', $validacion->getErrors());
         }
 
@@ -168,5 +170,36 @@ class Subtask extends BaseController
         $taskModel->delete($id);
 
         return redirect()->back()->with('success', 'Subarea eliminada exitosamente!');
+    }
+
+    public function updateEstado()
+    {
+        $subtaskModel = new SubtaskModel();
+        $taskModel = new TaskModel();
+        $taskId = $this->request->getPost('task_id');
+        $completedSubtasks = $this->request->getPost('completed') ?? [];
+
+        $allSubtasks = $subtaskModel->where('tareaId', $taskId)->findAll();
+        
+        foreach ($allSubtasks as $subtask) {
+            $completed = isset($completedSubtasks[$subtask['id']]) ? 1 : 2;
+            $subtaskModel->update($subtask['id'], ['estatus' => $completed]);
+        }
+
+        $updatedSubtasks = $subtaskModel->where('tareaId', $taskId)->findAll();
+        $totalSubtasks = count($updatedSubtasks);
+        $completedCount = count(array_filter($updatedSubtasks, fn($st) => $st['estatus'] == 1));
+
+        $newStatus = 0; 
+
+        if ($completedCount > 0 && $completedCount < $totalSubtasks) {
+            $newStatus = 2;
+        } elseif ($completedCount == $totalSubtasks && $totalSubtasks > 0) {
+            $newStatus = 1; 
+        }
+
+        $taskModel->update($taskId, ['estatus' => $newStatus]);
+
+        return redirect()->back()->with('success', 'Estado actualizado correctamente');
     }
 }
