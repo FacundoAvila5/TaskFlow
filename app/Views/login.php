@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
+    <div class="container vh-100">
+        <div class="row d-flex align-items-center justify-content-center h-100">
             <div class="col-lg-4">
                 <div class="card login-card">
                     <div class="card-body p-4">
@@ -45,9 +45,6 @@
                                 <label for="password" class="form-label">Contraseña</label>
                                 <input type="password" class="form-control" id="password" name="pass" required>
                                 <div class="invalid-feedback">Por favor ingresa tu contraseña</div>
-                            </div>
-                            <div class="mb-3 d-flex justify-content-end">
-                                <a href="<?= base_url('password/reset') ?>" class="text-decoration-none">¿Olvidaste tu contraseña?</a>
                             </div>
                             <button type="submit" class="btn btn-primary btn-login w-100 mb-3">Iniciar sesión</button>
                         <?= form_close() ?>

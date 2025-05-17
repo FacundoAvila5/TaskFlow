@@ -79,24 +79,6 @@
                         <?php endif; ?>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="responsable" class="form-label">Responsable <span class="text-danger">*</span></label>
-                        <select class="form-select <?= session('errors.responsable') ? 'is-invalid' : '' ?>" 
-                                id="responsable" name="responsable" required>
-                            <option value="">Seleccionar responsable</option>
-                            <?php foreach ($users as $usuario): ?>
-                                <option value="<?= $usuario['id'] ?>" 
-                                    <?= old('responsable', $subtask['responsableId'] ?? null) == $usuario['id'] ? 'selected' : '' ?>>
-                                    <?= esc($usuario['nombreUsuario']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (session('errors.responsable')): ?>
-                            <div class="invalid-feedback"><?= session('errors.responsable') ?></div>
-                        <?php endif; ?>
-                    </div>
-                    
-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

@@ -102,7 +102,7 @@ class Subtask extends BaseController
             'fechaVencimiento' => $this->request->getPost('vencimiento'),
             'fechaRecordatorio' => $this->request->getPost('vencimiento'),
             'estatus' => 2,
-            'responsableId' => $this->request->getPost('responsable')
+            'responsableId' => $userId,
         ]);
 
         return redirect()->back()->with('success', 'Subtarea creada exitosamente!');
@@ -174,31 +174,36 @@ class Subtask extends BaseController
 
     public function updateEstado()
     {
+        if (!session()->has('user_id')) {
+            return redirect()->to('login')->with('error', 'Debes iniciar sesión');
+        }
+
         $subtaskModel = new SubtaskModel();
         $taskModel = new TaskModel();
+        
         $taskId = $this->request->getPost('task_id');
-        $completedSubtasks = $this->request->getPost('completed') ?? [];
+        $subtaskId = $this->request->getPost('subtask_id'); 
+        $isChecked = $this->request->getPost('completed') == '1'; 
+
+        $newSubtaskStatus = $isChecked ? 1 : 0; 
+
+        if ($subtaskId) {
+            $subtaskModel->update($subtaskId, ['estatus' => $newSubtaskStatus]);
+        }
 
         $allSubtasks = $subtaskModel->where('tareaId', $taskId)->findAll();
-        
-        foreach ($allSubtasks as $subtask) {
-            $completed = isset($completedSubtasks[$subtask['id']]) ? 1 : 2;
-            $subtaskModel->update($subtask['id'], ['estatus' => $completed]);
-        }
+        $totalSubtasks = count($allSubtasks);
+        $completedCount = count(array_filter($allSubtasks, fn($st) => $st['estatus'] == 1));
 
-        $updatedSubtasks = $subtaskModel->where('tareaId', $taskId)->findAll();
-        $totalSubtasks = count($updatedSubtasks);
-        $completedCount = count(array_filter($updatedSubtasks, fn($st) => $st['estatus'] == 1));
-
-        $newStatus = 0; 
+        $newTaskStatus = 0; 
 
         if ($completedCount > 0 && $completedCount < $totalSubtasks) {
-            $newStatus = 2;
+            $newTaskStatus = 2;
         } elseif ($completedCount == $totalSubtasks && $totalSubtasks > 0) {
-            $newStatus = 1; 
+            $newTaskStatus = 1; 
         }
 
-        $taskModel->update($taskId, ['estatus' => $newStatus]);
+        $taskModel->update($taskId, ['estatus' => $newTaskStatus]);
 
         return redirect()->back()->with('success', 'Estado actualizado correctamente');
     }

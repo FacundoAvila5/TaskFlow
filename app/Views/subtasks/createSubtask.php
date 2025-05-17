@@ -1,4 +1,3 @@
-<!-- Modal para Nueva subtarea -->
 <div class="modal fade" id="createSubtask" tabindex="-1" aria-labelledby="nuevaSubtareaModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -17,7 +16,6 @@
             <?= form_open('subtask/create', ['id' => 'taskForm']) ?>
                 <div class="modal-body">
 
-                     <!-- Campo oculto para el ID de la tarea padre -->
                     <input type="hidden" name="task_id" value="<?= $task['id'] ?>">
 
                     <div class="mb-3">
@@ -30,7 +28,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
+                        <label for="descripcion" class="form-label">Descripción <span class="text-danger">*</span></label>
                         <textarea class="form-control <?= session('errors.descripcion') ? 'is-invalid' : '' ?>" 
                                   id="descripcion" name="descripcion" rows="3"><?= old('descripcion') ?></textarea>
                         <?php if (session('errors.descripcion')): ?>
@@ -52,26 +50,11 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="vencimiento" class="form-label">Fecha de vencimiento</label>
+                        <label for="vencimiento" class="form-label">Fecha de vencimiento <span class="text-danger">*</span></label>
                         <input type="date" class="form-control <?= session('errors.vencimiento') ? 'is-invalid' : '' ?>" 
                                id="vencimiento" name="vencimiento" value="<?= old('vencimiento') ?>">
                         <?php if (session('errors.vencimiento')): ?>
                             <div class="invalid-feedback"><?= session('errors.vencimiento') ?></div>
-                        <?php endif; ?>
-                    </div>
-                    <div class="mb-3">
-                        <label for="responsable" class="form-label">Responsable <span class="text-danger">*</span></label>
-                        <select class="form-select <?= session('errors.responsable') ? 'is-invalid' : '' ?>" 
-                                id="responsable" name="responsable" required>
-                            <option value="">Seleccionar responsable</option>
-                            <?php foreach ($users as $usuario): ?>
-                                <option value="<?= $usuario['id'] ?>" <?= old('responsable') == $usuario['id'] ? 'selected' : '' ?>>
-                                    <?= esc($usuario['nombreUsuario']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (session('errors.responsable')): ?>
-                            <div class="invalid-feedback"><?= session('errors.responsable') ?></div>
                         <?php endif; ?>
                     </div>
 

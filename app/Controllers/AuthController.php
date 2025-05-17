@@ -115,8 +115,60 @@ class AuthController extends BaseController {
         return redirect()->to('index');
     }
 
-    public function logout() {
+    public function logout()
+    {
         session()->destroy();
-        return redirect()->to('login');
+        return redirect()->to('/login')->with('success', 'Has cerrado sesión correctamente');
+    }
+
+    public function actualizarContrasenia()
+    {
+        if (!session()->has('user_id')) {
+            return redirect()->to('login');
+        }
+
+        $userModel = new UserAuthModel();
+        $user = $userModel->find(session('user_id'));
+
+        $validation = service('validation');
+        $validation->setRules([
+            'current_password' => 'required',
+            'new_password' => 'required|min_length[8]|regex_match[/^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).+$/]',
+            'confirm_password' => 'required|matches[new_password]'
+        ], [
+            'current_password' => [
+                'required' => 'La contraseña actual es requerida'
+            ],
+            'new_password' => [
+                'required' => 'La nueva contraseña es requerida',
+                'min_length' => 'La contraseña debe tener al menos 8 caracteres',
+                'regex_match' => 'La contraseña debe contener mayúscula, número y carácter especial'
+            ],
+            'confirm_password' => [
+                'required' => 'Debes confirmar la nueva contraseña',
+                'matches' => 'Las contraseñas no coinciden'
+            ]
+        ]);
+
+        if (!$validation->withRequest($this->request)->run()) {
+            return redirect()->back()
+                ->with('errors', $validation->getErrors())
+                ->with('modalTarget', 'cambiarContrasenia')
+                ->withInput();
+        }
+
+        if (!password_verify($this->request->getPost('current_password'), $user['password'])) {
+            $validation->setError('current_password', 'La contraseña actual es incorrecta');
+            return redirect()->back()
+                ->with('errors', $validation->getErrors())
+                ->with('modalTarget', 'cambiarContrasenia')
+                ->withInput();
+        }
+
+        $userModel->update($user['id'], [
+            'password' => password_hash($this->request->getPost('new_password'), PASSWORD_DEFAULT)
+        ]);
+
+        return redirect()->back()->with('success', 'Contraseña actualizada correctamente');
     }
 }
