@@ -26,7 +26,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
+                        <label for="descripcion" class="form-label">Descripción <span class="text-danger">*</span></label>
                         <textarea class="form-control <?= session('errors.descripcion') ? 'is-invalid' : '' ?>" 
                                   id="descripcion" name="descripcion" rows="3"><?= old('descripcion') ?></textarea>
                         <?php if (session('errors.descripcion')): ?>
@@ -48,7 +48,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="vencimiento" class="form-label">Fecha de vencimiento</label>
+                        <label for="vencimiento" class="form-label">Fecha de vencimiento <span class="text-danger">*</span></label>
                         <input type="date" class="form-control <?= session('errors.vencimiento') ? 'is-invalid' : '' ?>" 
                                id="vencimiento" name="vencimiento" value="<?= old('vencimiento') ?>">
                         <?php if (session('errors.vencimiento')): ?>

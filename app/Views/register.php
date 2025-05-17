@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
+    <div class="container vh-100">
+        <div class="row d-flex align-items-center justify-content-center h-100">
             <div class="col-lg-4 col-md-6 col-sm-8">
                 <div class="card shadow">
                     <div class="card-body p-4">

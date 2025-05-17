@@ -4,6 +4,7 @@ namespace App\Controllers;
 use App\Models\TaskModel;
 use App\Models\SubtaskModel;
 use App\Models\UserAuthModel;
+use App\Models\ColaboracionModel;
 
 class Task extends BaseController
 {
@@ -12,54 +13,82 @@ class Task extends BaseController
     }
     
     public function index()
-{
-    if (!session()->has('user_id')) {
-        return redirect()->to('login')->with('error', 'Debes iniciar sesión');
-    }
+    {
+        if (!session()->has('user_id')) {
+            return redirect()->to('login')->with('error', 'Debes iniciar sesión');
+        }
 
-    $userId = session()->get('user_id');
-    
-    $taskModel = new TaskModel();
-    $subtaskModel = new SubtaskModel(); // Asegúrate de que el namespace sea correcto
-    $userAuthModel = new UserAuthModel();
-    
-    // Obtener todas las tareas del usuario
-    $tasks = $taskModel->where('userId', $userId)
-                    ->orderBy('prioridad', 'DESC')
-                    ->orderBy('fechaVencimiento', 'ASC')
-                    ->findAll();
-
-    // Para cada tarea, obtener sus subtareas relacionadas
-    foreach ($tasks as &$task) {
-        $subtasks = $subtaskModel->where('tareaId', $task['id'])
-                                ->orderBy('prioridad', 'DESC')
-                                ->orderBy('fechaVencimiento', 'ASC')
-                                ->findAll();
+        $userId = session()->get('user_id');
         
-        // Mapear los campos para que coincidan con lo que espera la vista
-        $task['subtasks'] = array_map(function($subtask) {
-            return [
-                'id' => $subtask['id'],
-                'title' => $subtask['asunto'],
-                'description' => $subtask['descripcion'],
-                'completed' => ($subtask['estatus'] == 1), // Asumiendo que estatus 1 es completado
-                'prioridad' => $subtask['prioridad'],
-                'fechaVencimiento' => $subtask['fechaVencimiento'],
-                'responsableId' => $subtask['responsableId'],
-            ];
-        }, $subtasks);
+        $taskModel = new TaskModel();
+        $subtaskModel = new SubtaskModel();
+        $userAuthModel = new UserAuthModel();
+        $colaboradorModel = new ColaboracionModel();
+
+        $tareasColaboracion = $colaboradorModel
+            ->where('userId', $userId)
+            ->where('invitacionAceptada', true)
+            ->findAll();
+        
+        $tareaIdsColaboracion = array_column($tareasColaboracion, 'tareaId');
+        
+        $priority = $this->request->getGet('priority');
+        $status = $this->request->getGet('status');
+
+        $builder = $taskModel->where('archivada', false);
+
+        if (!empty($tareaIdsColaboracion)) {
+            $builder->groupStart()
+                    ->where('userId', $userId)
+                    ->orWhereIn('id', $tareaIdsColaboracion)
+                    ->groupEnd();
+        } else {
+            $builder->where('userId', $userId);
+        }
+        
+        if ($priority !== null && $priority !== '') {
+            $builder->where('prioridad', $priority);
+        }
+        
+        if ($status !== null && $status !== '') {
+            $builder->where('estatus', $status);
+        }
+        
+        
+        $tasks = $builder->orderBy('fechaVencimiento', 'ASC')
+                        ->findAll();
+
+        foreach ($tasks as &$task) {
+            $subtasks = $subtaskModel->where('tareaId', $task['id'])
+                                    ->orderBy('prioridad', 'DESC')
+                                    ->orderBy('fechaVencimiento', 'ASC')
+                                    ->findAll();
+            
+            $task['subtasks'] = array_map(function($subtask) {
+                return [
+                    'id' => $subtask['id'],
+                    'title' => $subtask['asunto'],
+                    'description' => $subtask['descripcion'],
+                    'completed' => ($subtask['estatus'] == 1),
+                    'prioridad' => $subtask['prioridad'],
+                    'fechaVencimiento' => $subtask['fechaVencimiento'],
+                    'responsableId' => $subtask['responsableId'],
+                ];
+            }, $subtasks);
+        }
+
+        $users = $userAuthModel->findAll();
+
+        $data = [
+            'title' => 'Mis Tareas',
+            'tasks' => $tasks,
+            'users' => $users,
+            'currentPriority' => $priority,
+            'currentStatus' => $status
+        ];
+        
+        return view('index', $data);
     }
-
-    $users = $userAuthModel->findAll();
-
-    $data = [
-        'title' => 'Mis Tareas',
-        'tasks' => $tasks ,
-        'users' => $users
-    ];
-    
-    return view('index', $data);
-}
 
     public function create()
     {
@@ -101,9 +130,13 @@ class Task extends BaseController
          if ($this->request->getPost('recordatorio')) {
             $recordatorio = $this->request->getPost('recordatorio');
             $vencimiento = $this->request->getPost('vencimiento');
-            $hoy = date('Y-m-d'); 
+            $hoy = date('Y-m-d');
 
-           $errores = [];
+            $errores = [];
+
+            if ($vencimiento < $hoy) {
+                $errores['vencimiento'] = 'La fecha de recordatorio no puede ser anterior a hoy';
+            }
 
             if ($recordatorio < $hoy) {
                 $errores['recordatorio'] = 'La fecha de recordatorio no puede ser anterior a hoy';
@@ -235,5 +268,217 @@ class Task extends BaseController
         $taskModel->delete($id);
 
         return redirect()->back()->with('success', 'Tarea creada exitosamente!');
+    }
+
+    public function invite($taskId)
+    {
+        $taskModel = new TaskModel();
+        $task = $taskModel->find($taskId);
+        
+        if (!$task) {
+            return redirect()->back()->with('error', 'La tarea no existe');
+        }
+
+        $validacion = service('validation');
+        $validacion->setRules(
+            [
+                'email' => 'required|valid_email',
+                'task_id' => 'required|is_natural_no_zero'
+            ],
+            [
+                'email' => [
+                    'required' => 'El email es requerido',
+                    'valid_email' => 'Debe ingresar un email válido'
+                ],
+                'task_id' => [
+                    'required' => 'ID de tarea requerido',
+                    'is_natural_no_zero' => 'ID de tarea inválido'
+                ]
+            ]
+        );
+
+        if (!$validacion->withRequest($this->request)->run()) {
+            return redirect()->back()
+                ->with('errors', $validacion->getErrors())
+                ->with('modalTarget', 'invitarColaboradores-'.$taskId);
+        }
+
+        $email = $this->request->getPost('email');
+        $errors = [];
+
+        $userModel = new UserAuthModel();
+        $invitedUser = $userModel->where('email', $email)->first();
+
+        if (!$invitedUser) {
+            $errors['email'] = 'No existe un usuario con ese email';
+        }
+        elseif ($invitedUser['id'] == $task['userId']) {
+            $errors['email'] = 'No puedes invitarte a ti mismo';
+        }
+        else {
+            $colaboracionModel = new ColaboracionModel();
+            $existingInvitation = $colaboracionModel
+                ->where('tareaId', $taskId)
+                ->where('userId', $invitedUser['id'])
+                ->first();
+
+            if ($existingInvitation) {
+                $errors['email'] = 'Este usuario ya fue invitado a la tarea';
+            }
+        }
+
+        if (!empty($errors)) {
+            return redirect()->back()
+                ->with('errors', $errors)
+                ->with('modalTarget', 'invitarColaboradores-'.$taskId);
+        }
+        
+        $invitationData = [
+            'tareaId' => $taskId,
+            'userId' => $invitedUser['id'],
+            'invitacionAceptada' => false,
+        ];
+
+        $colaboracionModel->insert($invitationData);
+
+        $this->sendInvitationEmail($email, $task);
+
+        return redirect()->back()
+            ->with('success_invitation', 'Invitación enviada correctamente a '.$email);
+    }
+
+    protected function sendInvitationEmail($email, $task)
+    {
+        $emailService = \Config\Services::email();
+        $userModel = new UserAuthModel();
+        $colaboracionModel = new ColaboracionModel();
+        
+        $inviter = $userModel->find(session('user_id'));
+        
+        $colaboracion = $colaboracionModel
+            ->where('tareaId', $task['id'])
+            ->where('userId', $userModel->where('email', $email)->first()['id'])
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        $acceptLink = site_url("task/aceptar_invitacion/{$colaboracion['id']}");
+        $rejectLink = site_url("task/rechazar_invitacion/{$colaboracion['id']}");
+        
+        $message = '
+        <p>Hola,</p>
+        <p>Has sido invitado a colaborar en la tarea: <strong>'.$task['asunto'].'</strong></p>
+        
+        <p>
+            <a href="'.$acceptLink.'" style="
+                background: #28a745;
+                color: white;
+                padding: 5px 10px;
+                text-decoration: none;
+                border-radius: 3px;
+                margin-right: 5px;
+            ">Aceptar</a>
+            
+            <a href="'.$rejectLink.'" style="
+                background: #dc3545;
+                color: white;
+                padding: 5px 10px;
+                text-decoration: none;
+                border-radius: 3px;
+            ">Rechazar</a>
+        </p>
+        
+        <p>Saludos,<br>TaskFlow</p>';
+
+        $emailService->setTo('facuaviila5@outlook.com');
+        $emailService->setFrom('facuaviila5@outlook.com', 'Sistema de Tareas');
+        $emailService->setSubject("Invitación a tarea: {$task['asunto']}");
+        $emailService->setMessage($message);
+        $emailService->setMailType('html'); 
+        
+        return $emailService->send();
+    }
+
+    public function aceptar_invitacion($colaboracionId)
+    {
+        $colaboracionModel = new ColaboracionModel();
+        
+        $updated = $colaboracionModel->update($colaboracionId, [
+            'invitacionAceptada' => true
+        ]);
+
+        return redirect()->to("/index")
+            ->with('success', '¡Has aceptado la invitación!');
+    }
+
+    public function rechazar_invitacion($colaboracionId)
+    {
+        $colaboracionModel = new ColaboracionModel();
+        
+        $updated = $colaboracionModel->update($colaboracionId, [
+            'invitacionAceptada' => false,
+        ]);
+        
+        return redirect()->to('/index"')
+            ->with('success', 'Has rechazado la invitación');
+    }
+
+    public function archivadas()
+    {
+        if (!session()->has('user_id')) {
+            return redirect()->to('login')->with('error', 'Debes iniciar sesión');
+        }
+
+        $taskModel = new TaskModel();
+        $subtaskModel = new SubtaskModel();
+
+        $archivadas = $taskModel->where('userId', session()->get('user_id'))
+                            ->groupStart()
+                                ->where('archivada', true)
+                                ->orWhere('estatus', 1) 
+                            ->groupEnd()
+                            ->findAll();
+
+        if (empty($archivadas)) {
+            return view('archivadas', [
+                'tasks' => [],
+                'title' => 'Tareas Archivadas'
+            ]);
+        }
+
+        $taskIds = array_column($archivadas, 'id');
+        
+        $subtasks = $subtaskModel->whereIn('tareaId', $taskIds)
+                            ->findAll();
+
+        $subtasksByTask = [];
+        foreach ($subtasks as $subtask) {
+            $subtasksByTask[$subtask['tareaId']][] = $subtask;
+        }
+
+        foreach ($archivadas as &$task) {
+            $task['subtasks'] = $subtasksByTask[$task['id']] ?? [];
+        }
+
+        return view('archivadas', [
+            'tasks' => $archivadas,
+            'title' => 'Tareas Archivadas'
+        ]);
+    }
+
+    public function archivar($taskId)
+    {
+        $taskModel = new TaskModel();
+        
+        $task = $taskModel->find($taskId);
+        if (!$task || $task['estatus'] != 1) { 
+            return redirect()->back()->with('error', 'Solo puedes archivar tareas completadas');
+        }
+        
+        $taskModel->update($taskId, [
+            'archivada' => true,
+        ]);
+        
+        return redirect()->to('/archivadas')
+            ->with('success', 'Has rechazado la invitación');
     }
 }
